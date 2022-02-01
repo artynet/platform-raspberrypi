@@ -180,7 +180,7 @@ def fetch_fs_size(env):
 
     print("Maximium size: %d Flash Length: %d "
         "EEPROM Start: %d Filesystem start %d "
-        "Filesystem end %s" % 
+        "Filesystem end %s" %
         (maximum_size,flash_length, eeprom_start, fs_start, fs_end))
 
 
@@ -214,8 +214,10 @@ env["fetch_fs_size"] = fetch_fs_size
 #
 
 target_elf = None
+target_uf2 = None
 if "nobuild" in COMMAND_LINE_TARGETS:
     target_elf = join("$BUILD_DIR", "${PROGNAME}.elf")
+	target_elf = join("$BUILD_DIR", "${PROGNAME}.uf2")
     target_firm = join("$BUILD_DIR", "${PROGNAME}.bin")
 else:
     target_elf = env.BuildProgram()
@@ -262,7 +264,7 @@ AlwaysBuild(target_size)
 def DelayBeforeUpload(target, source, env):  # pylint: disable=W0613,W0621
     time.sleep(0.5)
 
-def RebootPico(target, source, env): 
+def RebootPico(target, source, env):
     time.sleep(0.5)
     env.Execute(
         '"%s" reboot' %
@@ -311,6 +313,26 @@ elif upload_protocol == "picotool":
         upload_actions.append(env.VerboseAction(RebootPico, "Rebooting device..."))
 
     upload_source = target_elf
+
+elif upload_protocol == "uf2":
+    env.Replace(
+        UPLOADER=join(platform.get_package_dir("framework-arduino-rp2040-arancino") or "", "tools", "uf2conv.py"),
+        # UPLOADERFLAGS=["-v", "-D"],
+        UPLOADCMD="$UPLOADER --serial $UPLOAD_PORT --family RP2040 --deploy $SOURCES"
+    )
+
+    upload_actions = [
+        env.VerboseAction(BeforeUpload, "Looking for upload port..."),
+        env.VerboseAction("$UPLOADCMD", "Uploading $SOURCE"),
+    ]
+
+    # picotool seems to need just a tiny bit of delay, but rp2040 load not..
+    # if "uploadfs" in COMMAND_LINE_TARGETS:
+    #     upload_actions.insert(1, env.VerboseAction(DelayBeforeUpload, "Delaying a tiny bit..."))
+    #     # reboot after filesystem upload
+    #     upload_actions.append(env.VerboseAction(RebootPico, "Rebooting device..."))
+
+    upload_source = target_uf2
 
 elif upload_protocol.startswith("jlink"):
 
