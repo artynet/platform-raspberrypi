@@ -39,12 +39,13 @@
     "native_usb": true,
     "use_1200bps_touch": true,
     "wait_for_upload_port": false,
-    "protocol": "picotool",
+    "protocol": "uf2",
     "protocols": [
       "cmsis-dap",
       "jlink",
       "raspberrypi-swd",
       "picotool",
+      "uf2",
       "picoprobe"
     ]
   },
